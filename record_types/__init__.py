@@ -1,6 +1,13 @@
 
 from collections import namedtuple
 
+# see: http://www.ordnancesurvey.co.uk/docs/technical-specifications/addressbase-premium-technical-specification-csv.pdf
+
+Header = namedtuple('HeaderRecord', [
+    'record_identifier', 'custodian_name', 'local_custodian_code',
+    'process_date', 'volume_number', 'entry_date', 'time_stamp', 'version',
+    'file_type']
+)
 
 BLPU = namedtuple('BLPU', [
     'record_identifier', 'change_type', 'pro_order', 'uprn', 'logical_status',

@@ -4,12 +4,13 @@ import csv
 from itertools import groupby
 from operator import itemgetter
 
-from record_types import BLPU, DPA
+from record_types import Header, BLPU, DPA
 from update_properties.update_elasticsearch import update_elasticsearch
 from update_properties.update_site_map import update_site_map
 
 
 CSV_PATH = '/vagrant/apps/import-addressbase/abp-sample/SX9090_small.csv'
+HEADER_ID = 10  # Header record                (contains entry date)
 BLPU_ID = 21    # Basic Land and Property Unit (contains coordinates)
 DPA_ID = 28     # Delivery Point Address       (contains addresses)
 

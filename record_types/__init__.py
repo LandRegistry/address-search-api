@@ -3,21 +3,21 @@ from collections import namedtuple
 
 
 BLPU = namedtuple('BLPU', [
-    'RECORD_IDENTIFIER', 'CHANGE_TYPE', 'PRO_ORDER','UPRN', 'LOGICAL_STATUS',
-    'BLPU_STATE', 'BLPU_STATE_DATE', 'PARENT_UPRN', 'X_COORDINATE',
-    'Y_COORDINATE', 'RPC', 'LOCAL_CUSTODIAN_CODE', 'START_DATE', 'END_DATE',
-    'LAST_UPDATE_DATE', 'ENTRY_DATE', 'POSTAL_ADDRESS', 'POSTCODE_LOCATOR',
-    'MULTI_OCC_COUNT']
+    'record_identifier', 'change_type', 'pro_order', 'uprn', 'logical_status',
+    'blpu_state', 'blpu_state_date', 'parent_uprn', 'x_coordinate',
+    'y_coordinate', 'rpc', 'local_custodian_code', 'start_date', 'end_date',
+    'last_update_date', 'entry_date', 'postal_address', 'postcode_locator',
+    'multi_occ_count']
 )
 
 DPA = namedtuple('DPA', [
-    'RECORD_IDENTIFIER', 'CHANGE_TYPE', 'PRO_ORDER', 'UPRN',
-    'PARENT_ADDRESSABLE_UPRN', 'RM_UDPRN', 'ORGANISATION_NAME',
-    'DEPARTMENT_NAME', 'SUB_BUILDING_NAME', 'BUILDING_NAME', 'BUILDING_NUMBER',
-    'DEPENDENT_THOROUGHFARE_NAME', 'THOROUGHFARE_NAME',
-    'DOUBLE_DEPENDENT_LOCALITY', 'DEPENDENT_LOCALITY', 'POST_TOWN', 'POSTCODE',
-    'POSTCODE_TYPE', 'WELSH_DEPENDENT_THOROUGHFARE_NAME',
-    'WELSH_THOROUGHFARE_NAME', 'WELSH_DOUBLE_DEPENDENT_LOCALITY',
-    'WELSH_DEPENDENT_LOCALITY', 'WELSH_POST_TOWN', 'PO_BOX_NUMBER',
-    'PROCESS_DATE', 'START_DATE', 'END_DATE', 'LAST_UPDATE_DATE', 'ENTRY_DATE']
+    'record_identifier', 'change_type', 'pro_order', 'uprn',
+    'parent_addressable_uprn', 'rm_udprn', 'organisation_name',
+    'department_name', 'sub_building_name', 'building_name', 'building_number',
+    'dependent_thoroughfare_name', 'thoroughfare_name',
+    'double_dependent_locality', 'dependent_locality', 'post_town', 'postcode',
+    'postcode_type', 'welsh_dependent_thoroughfare_name',
+    'welsh_thoroughfare_name', 'welsh_double_dependent_locality',
+    'welsh_dependent_locality', 'welsh_post_town', 'po_box_number',
+    'process_date', 'start_date', 'end_date', 'last_update_date', 'entry_date']
 )

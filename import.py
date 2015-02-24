@@ -6,7 +6,6 @@ from operator import itemgetter
 
 from record_types import Header, BLPU, DPA
 from update_properties.update_elasticsearch import update_elasticsearch
-from update_properties.update_site_map import update_site_map
 
 
 CSV_PATH = '/vagrant/apps/import-addressbase/abp-sample/SX9090_small.csv'
@@ -44,4 +43,3 @@ if __name__ == '__main__':
     record_groups = get_grouped_address_rows()
     for grouped_records in record_groups:
         update_elasticsearch(grouped_records)
-        update_site_map(grouped_records)

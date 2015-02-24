@@ -6,7 +6,6 @@ from itertools import groupby
 from operator import itemgetter
 
 from record_types import Header, BLPU, DPA
-from update_properties.update_elasticsearch import update_elasticsearch
 
 
 CSV_PATH = '/vagrant/apps/import-addressbase/abp-sample/SX9090_small.csv'
@@ -26,6 +25,13 @@ ADDRESS_KEY_FIELDS = ['organisation_name', 'sub_building_name', 'building_name',
                       'building_number', 'dependent_thoroughfare_name',
                       'thoroughfare_name', 'double_dependent_locality',
                       'dependent_locality', 'post_town', 'postcode']
+
+
+def update_elasticsearch(address_dicts):
+    for address_dict in address_dicts:
+        print('\n\nUPRN: {}'.format(address_dict['uprn']))
+        from pprint import pprint
+        pprint(address_dict, width=1)
 
 
 def make_address_dict(dpa, position, entry_datetime):

@@ -1,8 +1,6 @@
 
-def update_elasticsearch(grouped_records):
-    print('\n\nupdate_elasticsearch()')
-
-    print('\n\nUPRN: {}'.format(grouped_records[0]))
-    from pprint import pprint
-    for i in grouped_records[1]:
-        pprint(i._asdict(), width=1)
+def update_elasticsearch(address_dicts):
+    for address_dict in address_dicts:
+        print('\n\nUPRN: {}'.format(address_dict['uprn']))
+        from pprint import pprint
+        pprint(address_dict, width=1)

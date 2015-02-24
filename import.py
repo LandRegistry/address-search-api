@@ -10,15 +10,15 @@ from update_properties.update_site_map import update_site_map
 
 
 CSV_PATH = '/vagrant/apps/import-addressbase/abp-sample/SX9090_small.csv'
-BLPU_ID = 21  # Basic Land and Property Unit (contains coordinates)
-DPA_ID = 28   # Delivery Point Address       (contains addresses)
+BLPU_ID = 21    # Basic Land and Property Unit (contains coordinates)
+DPA_ID = 28     # Delivery Point Address       (contains addresses)
 
 
 # common column name indexes
 RECORD_IDENTIFIER = 0
-CHANGE_TYPE       = 1
-CHANGE_TYPE_CODE  = 2
-UPRN              = 3
+CHANGE_TYPE = 1
+CHANGE_TYPE_CODE = 2
+UPRN = 3
 
 
 def get_grouped_address_rows():

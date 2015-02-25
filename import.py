@@ -2,8 +2,11 @@
 
 import csv
 from datetime import datetime
+from elasticsearch import Elasticsearch
+from elasticsearch.helpers import bulk
 from itertools import groupby
 from operator import itemgetter
+import os
 
 from record_types import Header, BLPU, DPA
 
@@ -27,38 +30,53 @@ ADDRESS_KEY_FIELDS = ['organisation_name', 'sub_building_name', 'building_name',
                       'dependent_locality', 'post_town', 'postcode']
 
 
-def update_elasticsearch(address_dicts):
-    for address_dict in address_dicts:
-        print('\n\nUPRN: {}'.format(address_dict['uprn']))
-        from pprint import pprint
-        pprint(address_dict, width=1)
-
-
-def make_address_dict(dpa, position, entry_datetime):
+def make_es_action(dpa, position, entry_datetime):
     dpa_dict = dpa._asdict()
     address_key = '_'.join([dpa_dict[f].replace(' ', '_')
                             for f in ADDRESS_KEY_FIELDS if dpa_dict[f]])
-    result_dict = {
-        'uprn': dpa.uprn,
-        'organisationName': dpa.organisation_name,
-        'departmentName': dpa.department_name,
-        'subBuildingName': dpa.sub_building_name,
-        'buildingName': dpa.building_name,
-        'buildingNumber': dpa.building_number,
-        'dependentThoroughfareName': dpa.dependent_thoroughfare_name,
-        'thoroughfareName': dpa.thoroughfare_name,
-        'doubleDependentLocality': dpa.double_dependent_locality,
-        'dependentLocality': dpa.dependent_locality,
-        'postTown': dpa.post_town,
-        'postcode': dpa.postcode,
-        'position': position,
-        'addressKey': address_key,
-        'entryDatetime': entry_datetime,
-    }
-    return result_dict
+    doc = {
+            'uprn': dpa.uprn,
+            'organisationName': dpa.organisation_name,
+            'departmentName': dpa.department_name,
+            'subBuildingName': dpa.sub_building_name,
+            'buildingName': dpa.building_name,
+            'buildingNumber': dpa.building_number,
+            'dependentThoroughfareName': dpa.dependent_thoroughfare_name,
+            'thoroughfareName': dpa.thoroughfare_name,
+            'doubleDependentLocality': dpa.double_dependent_locality,
+            'dependentLocality': dpa.dependent_locality,
+            'postTown': dpa.post_town,
+            'postcode': dpa.postcode,
+            'position': position,
+            'entryDatetime': entry_datetime,
+        }
+    if dpa.change_type == 'I':
+        action_dict = {
+            '_index': 'landregistry',
+            '_type': 'property',
+            '_id': address_key,
+            '_ttl': '1d',
+            '_source': doc,
+        }
+    elif dpa.change_type == 'U':
+        action_dict = {
+            '_op_type': 'update',
+            '_index': 'landregistry',
+            '_type': 'property',
+            '_id': address_key,
+            'doc': doc,
+        }
+    elif dpa.change_type == 'D':
+        action_dict = {
+            '_op_type': 'delete',
+            '_index': 'landregistry',
+            '_type': 'property',
+            '_id': address_key,
+        }
+    return action_dict
 
 
-def get_address_dicts():
+def get_action_dicts():
     """A generator which yields address dicts for groups of records with one DPA
     and zero or one BPLU
     """
@@ -96,10 +114,16 @@ def get_address_dicts():
                 if len(filtered[BLPU_ID]) == 1:
                     blpu = filtered[BLPU_ID][0]
                     position = {'x': blpu.x_coordinate, 'y': blpu.y_coordinate}
-                address_dict = make_address_dict(dpa, position, entry_datetime)
-                yield address_dict
+                action_dict = make_es_action(dpa, position, entry_datetime)
+
+                # TODO: remove debug print statement
+                from pprint import pprint
+                pprint(action_dict, width=1)
+
+                yield action_dict
 
 
 if __name__ == '__main__':
-    address_dicts = get_address_dicts()
-    update_elasticsearch(address_dicts)
+    action_dicts = get_action_dicts()
+    client = Elasticsearch(['localhost:4900'])
+    bulk(client, action_dicts)

@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 
+import argparse
 import csv
 from datetime import datetime
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 from itertools import groupby
 from operator import itemgetter
-import os
 
 from record_types import Header, BLPU, DPA
 
 
-CSV_PATH = '/vagrant/apps/import-addressbase/abp-sample/SX9090_small.csv'
 HEADER_ID = 10  # Header record                (contains entry date)
 BLPU_ID = 21    # Basic Land and Property Unit (contains coordinates)
 DPA_ID = 28     # Delivery Point Address       (contains addresses)
@@ -84,11 +83,11 @@ def make_es_actions(dpa, position, entry_datetime):
     return actions
 
 
-def get_action_dicts():
+def get_action_dicts(filename):
     """A generator which yields address dicts for groups of records with one DPA
     and zero or one BPLU
     """
-    with open(CSV_PATH, 'r') as csv_file:
+    with open(filename, 'r') as csv_file:
         data_reader = csv.reader(csv_file)
 
         rec_types = {BLPU_ID: BLPU, DPA_ID: DPA}
@@ -133,6 +132,9 @@ def get_action_dicts():
 
 
 if __name__ == '__main__':
-    action_dicts = get_action_dicts()
+    parser = argparse.ArgumentParser(description='Imports AddressBase CSV files into elasticsearch.')
+    parser.add_argument('filename', help='AddressBase CSV filename')
+    args = parser.parse_args()
+    action_dicts = get_action_dicts(args.filename)
     client = Elasticsearch(['localhost:4900'])
     bulk(client, action_dicts)

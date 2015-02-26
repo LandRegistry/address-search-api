@@ -30,7 +30,7 @@ ADDRESS_KEY_FIELDS = ['organisation_name', 'sub_building_name', 'building_name',
                       'dependent_locality', 'post_town', 'postcode']
 
 
-def make_es_action(dpa, position, entry_datetime):
+def make_es_actions(dpa, position, entry_datetime):
     dpa_dict = dpa._asdict()
     address_key = '_'.join([dpa_dict[f].replace(' ', '_')
                             for f in ADDRESS_KEY_FIELDS if dpa_dict[f]])
@@ -50,30 +50,38 @@ def make_es_action(dpa, position, entry_datetime):
             'position': position,
             'entryDatetime': entry_datetime,
         }
-    if dpa.change_type == 'I':
-        action_dict = {
-            '_index': 'landregistry',
-            '_type': 'property',
-            '_id': address_key,
-            '_ttl': '1d',
-            '_source': doc,
-        }
-    elif dpa.change_type == 'U':
-        action_dict = {
-            '_op_type': 'update',
-            '_index': 'landregistry',
-            '_type': 'property',
-            '_id': address_key,
-            'doc': doc,
-        }
-    elif dpa.change_type == 'D':
-        action_dict = {
-            '_op_type': 'delete',
-            '_index': 'landregistry',
-            '_type': 'property',
-            '_id': address_key,
-        }
-    return action_dict
+    type_id_list = [
+        ('property', lambda: address_key),
+        ('propertyByPostcode', lambda: dpa.postcode),
+    ]
+
+    def make_action(es_type, es_id):
+        if dpa.change_type == 'I':
+            action_dict = {
+                '_index': 'landregistry',
+                '_type': es_type,
+                '_id': es_id(),
+                '_source': doc,
+            }
+        elif dpa.change_type == 'U':
+            action_dict = {
+                '_op_type': 'update',
+                '_index': 'landregistry',
+                '_type': es_type,
+                '_id': es_id(),
+                'doc': doc,
+            }
+        elif dpa.change_type == 'D':
+            action_dict = {
+                '_op_type': 'delete',
+                '_index': 'landregistry',
+                '_type': es_type,
+                '_id': es_id(),
+            }
+        return action_dict
+
+    actions = [make_action(es_type, es_id) for es_type, es_id in type_id_list]
+    return actions
 
 
 def get_action_dicts():
@@ -114,13 +122,14 @@ def get_action_dicts():
                 if len(filtered[BLPU_ID]) == 1:
                     blpu = filtered[BLPU_ID][0]
                     position = {'x': blpu.x_coordinate, 'y': blpu.y_coordinate}
-                action_dict = make_es_action(dpa, position, entry_datetime)
+                action_dicts = make_es_actions(dpa, position, entry_datetime)
 
                 # TODO: remove debug print statement
                 from pprint import pprint
-                pprint(action_dict, width=1)
+                pprint(action_dicts, width=1)
 
-                yield action_dict
+                for action_dict in action_dicts:
+                    yield action_dict
 
 
 if __name__ == '__main__':

@@ -11,5 +11,5 @@ To run it, run the following from a shell:
 
 ```
     workon import-addressbase
-    ./import.py
+    python import.py /path/to/addressbase_file.csv
 ```

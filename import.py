@@ -132,9 +132,14 @@ def get_action_dicts(filename):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Imports AddressBase CSV files into elasticsearch.')
+    parser = argparse.ArgumentParser(description='Imports AddressBase CSV '
+                                                 'files into elasticsearch.')
     parser.add_argument('filename', help='AddressBase CSV filename')
+    parser.add_argument('-n', '--nodes', nargs='+',
+                        help='<Required> Elasticsearch nodes (host[:port] '
+                             'eg. "localhost:4900")',
+                        required=True)
     args = parser.parse_args()
+    client = Elasticsearch(args.nodes)
     action_dicts = get_action_dicts(args.filename)
-    client = Elasticsearch(['localhost:4900'])
     bulk(client, action_dicts)

@@ -180,7 +180,11 @@ if __name__ == '__main__':
                              'eg. "localhost:4900")',
                         required=True)
     args = parser.parse_args()
+
     client = Elasticsearch(args.nodes)
+    # create index if it doesn't exist
+    client.index(index=INDEX_NAME, doc_type=TYPE_TO_INDEX_MAPPING[0][0],
+                 body={})
     make_es_mappings(client)
     action_dicts = get_action_dicts(args.filename)
     bulk(client, action_dicts)

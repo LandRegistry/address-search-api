@@ -23,6 +23,11 @@ CHANGE_TYPE = 1
 CHANGE_TYPE_CODE = 2
 UPRN = 3
 
+# change_type values
+INSERT = 'I'
+UPDATE = 'U'
+DELETE = 'D'
+
 ADDRESS_KEY_FIELDS = ['organisation_name', 'sub_building_name', 'building_name',
                       'building_number', 'dependent_thoroughfare_name',
                       'thoroughfare_name', 'double_dependent_locality',
@@ -89,14 +94,14 @@ def make_es_actions(dpa, position, entry_datetime):
     }
 
     def make_action(doc_type):
-        if dpa.change_type == 'I':
+        if dpa.change_type == INSERT:
             action_dict = {
                 '_index': INDEX_NAME,
                 '_type': doc_type,
                 '_id': dpa.uprn,
                 '_source': doc,
             }
-        elif dpa.change_type == 'U':
+        elif dpa.change_type == UPDATE:
             action_dict = {
                 '_op_type': 'update',
                 '_index': INDEX_NAME,
@@ -104,7 +109,7 @@ def make_es_actions(dpa, position, entry_datetime):
                 '_id': dpa.uprn,
                 'doc': doc,
             }
-        elif dpa.change_type == 'D':
+        elif dpa.change_type == DELETE:
             action_dict = {
                 '_op_type': 'delete',
                 '_index': INDEX_NAME,

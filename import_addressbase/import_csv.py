@@ -28,10 +28,10 @@ ADDRESS_KEY_FIELDS = ['organisation_name', 'sub_building_name', 'building_name',
                       'thoroughfare_name', 'double_dependent_locality',
                       'dependent_locality', 'post_town', 'postcode']
 
-TYPE_TO_INDEX_MAPPING = [
-    ('property', 'addressKey'),
-    ('propertyByPostcode', 'postcode'),
-]
+TYPE_TO_INDEX_MAPPING = {
+    'property': 'addressKey',
+    'propertyByPostcode': 'postcode',
+}
 
 
 def make_es_mappings(client):
@@ -63,7 +63,7 @@ def make_es_mappings(client):
                                                  doc_type=doc_type,
                                                  body=mapping)
 
-    for doc_type, index_field in TYPE_TO_INDEX_MAPPING:
+    for doc_type, index_field in TYPE_TO_INDEX_MAPPING.items():
         make_es_mapping(doc_type, index_field)
 
 
@@ -114,7 +114,7 @@ def make_es_actions(dpa, position, entry_datetime):
             }
         return action_dict
 
-    actions = [make_action(doc_type) for doc_type, _ in TYPE_TO_INDEX_MAPPING]
+    actions = [make_action(doctype) for doctype in TYPE_TO_INDEX_MAPPING.keys()]
     return actions
 
 
@@ -173,8 +173,8 @@ def get_action_dicts(filename):
 def import_csv(filename, nodes):
     client = Elasticsearch(nodes)
     # create index if it doesn't exist
-    client.index(index=INDEX_NAME, doc_type=TYPE_TO_INDEX_MAPPING[0][0],
-                 body={})
+    doc_type = list(TYPE_TO_INDEX_MAPPING.keys())[0]
+    client.index(index=INDEX_NAME, doc_type=doc_type, body={})
     make_es_mappings(client)
     action_dicts = get_action_dicts(filename)
     bulk(client, action_dicts)

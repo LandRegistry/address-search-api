@@ -52,7 +52,6 @@ def make_es_mappings(client):
         'dependentLocality': {'type': 'string', 'index': 'no'},
         'postTown': {'type': 'string', 'index': 'no'},
         'postcode': {'type': 'string', 'index': 'no'},
-        'addressKey': {'type': 'string', 'index': 'no'},
         'entryDatetime': {'type': 'date',
                           'format': 'date_time_no_millis',
                           'index': 'no'},
@@ -72,9 +71,6 @@ def make_es_mappings(client):
 
 
 def make_es_actions(dpa, position, entry_datetime):
-    dpa_dict = vars(dpa)
-    address_key = '_'.join([dpa_dict[f].replace(' ', '_')
-                            for f in ADDRESS_KEY_FIELDS if dpa_dict[f]])
     doc = {
         'uprn': dpa.uprn,
         'organisationName': dpa.organisation_name,
@@ -88,7 +84,6 @@ def make_es_actions(dpa, position, entry_datetime):
         'dependentLocality': dpa.dependent_locality,
         'postTown': dpa.post_town,
         'postcode': dpa.postcode,
-        'addressKey': address_key,
         'position': position,
         'entryDatetime': entry_datetime,
     }

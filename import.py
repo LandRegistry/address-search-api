@@ -1,6 +1,6 @@
 import argparse
 
-from import_addressbase.import_csv import import_csv
+from import_addressbase import import_csv
 
 
 if __name__ == '__main__':

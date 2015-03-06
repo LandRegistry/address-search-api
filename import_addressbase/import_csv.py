@@ -29,7 +29,6 @@ ADDRESS_KEY_FIELDS = ['organisation_name', 'sub_building_name', 'building_name',
                       'dependent_locality', 'post_town', 'postcode']
 
 TYPE_TO_INDEX_MAPPING = {
-    'property': 'addressKey',
     'propertyByPostcode': 'postcode',
 }
 

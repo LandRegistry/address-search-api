@@ -23,15 +23,19 @@ CHANGE_TYPE = 1
 CHANGE_TYPE_CODE = 2
 UPRN = 3
 
+# change_type values
+INSERT = 'I'
+UPDATE = 'U'
+DELETE = 'D'
+
 ADDRESS_KEY_FIELDS = ['organisation_name', 'sub_building_name', 'building_name',
                       'building_number', 'dependent_thoroughfare_name',
                       'thoroughfare_name', 'double_dependent_locality',
                       'dependent_locality', 'post_town', 'postcode']
 
-TYPE_TO_INDEX_MAPPING = [
-    ('property', 'addressKey'),
-    ('propertyByPostcode', 'postcode'),
-]
+TYPE_TO_INDEX_MAPPING = {
+    'propertyByPostcode': 'postcode',
+}
 
 
 def make_es_mappings(client):
@@ -48,7 +52,6 @@ def make_es_mappings(client):
         'dependentLocality': {'type': 'string', 'index': 'no'},
         'postTown': {'type': 'string', 'index': 'no'},
         'postcode': {'type': 'string', 'index': 'no'},
-        'addressKey': {'type': 'string', 'index': 'no'},
         'entryDatetime': {'type': 'date',
                           'format': 'date_time_no_millis',
                           'index': 'no'},
@@ -63,14 +66,11 @@ def make_es_mappings(client):
                                                  doc_type=doc_type,
                                                  body=mapping)
 
-    for doc_type, index_field in TYPE_TO_INDEX_MAPPING:
+    for doc_type, index_field in TYPE_TO_INDEX_MAPPING.items():
         make_es_mapping(doc_type, index_field)
 
 
 def make_es_actions(dpa, position, entry_datetime):
-    dpa_dict = vars(dpa)
-    address_key = '_'.join([dpa_dict[f].replace(' ', '_')
-                            for f in ADDRESS_KEY_FIELDS if dpa_dict[f]])
     doc = {
         'uprn': dpa.uprn,
         'organisationName': dpa.organisation_name,
@@ -84,20 +84,19 @@ def make_es_actions(dpa, position, entry_datetime):
         'dependentLocality': dpa.dependent_locality,
         'postTown': dpa.post_town,
         'postcode': dpa.postcode,
-        'addressKey': address_key,
         'position': position,
         'entryDatetime': entry_datetime,
     }
 
     def make_action(doc_type):
-        if dpa.change_type == 'I':
+        if dpa.change_type == INSERT:
             action_dict = {
                 '_index': INDEX_NAME,
                 '_type': doc_type,
                 '_id': dpa.uprn,
                 '_source': doc,
             }
-        elif dpa.change_type == 'U':
+        elif dpa.change_type == UPDATE:
             action_dict = {
                 '_op_type': 'update',
                 '_index': INDEX_NAME,
@@ -105,7 +104,7 @@ def make_es_actions(dpa, position, entry_datetime):
                 '_id': dpa.uprn,
                 'doc': doc,
             }
-        elif dpa.change_type == 'D':
+        elif dpa.change_type == DELETE:
             action_dict = {
                 '_op_type': 'delete',
                 '_index': INDEX_NAME,
@@ -114,7 +113,7 @@ def make_es_actions(dpa, position, entry_datetime):
             }
         return action_dict
 
-    actions = [make_action(doc_type) for doc_type, _ in TYPE_TO_INDEX_MAPPING]
+    actions = [make_action(doctype) for doctype in TYPE_TO_INDEX_MAPPING.keys()]
     return actions
 
 
@@ -173,8 +172,8 @@ def get_action_dicts(filename):
 def import_csv(filename, nodes):
     client = Elasticsearch(nodes)
     # create index if it doesn't exist
-    client.index(index=INDEX_NAME, doc_type=TYPE_TO_INDEX_MAPPING[0][0],
-                 body={})
+    doc_type = list(TYPE_TO_INDEX_MAPPING.keys())[0]
+    client.index(index=INDEX_NAME, doc_type=doc_type, body={})
     make_es_mappings(client)
     action_dicts = get_action_dicts(filename)
     bulk(client, action_dicts)

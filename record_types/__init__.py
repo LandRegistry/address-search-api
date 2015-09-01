@@ -1,4 +1,3 @@
-
 from collections import namedtuple
 
 # see: http://www.ordnancesurvey.co.uk/docs/technical-specifications/addressbase-premium-technical-specification-csv.pdf

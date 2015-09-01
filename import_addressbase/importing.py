@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 
+from copy import deepcopy
 import csv
-from elasticsearch import Elasticsearch
-from elasticsearch.client import IndicesClient
-from elasticsearch.helpers import bulk
+from elasticsearch import Elasticsearch         # type: ignore
+from elasticsearch.client import IndicesClient  # type: ignore
+from elasticsearch.helpers import bulk          # type: ignore
 from itertools import groupby
-from operator import itemgetter
+from operator import itemgetter  # type: ignore
+from typing import Dict, Iterator, List, Union
 
-from import_addressbase.record_types import Header, BLPU, DPA
+from record_types import Header, BLPU, DPA
 
 
 INDEX_NAME = 'landregistry'
@@ -28,64 +30,69 @@ INSERT = 'I'
 UPDATE = 'U'
 DELETE = 'D'
 
-ADDRESS_KEY_FIELDS = ['organisation_name', 'sub_building_name', 'building_name',
-                      'building_number', 'dependent_thoroughfare_name',
-                      'thoroughfare_name', 'double_dependent_locality',
-                      'dependent_locality', 'post_town', 'postcode']
+ADDRESS_KEY_FIELDS = [
+    'organisation_name', 'sub_building_name', 'building_name', 'building_number', 'dependent_thoroughfare_name',
+    'thoroughfare_name', 'double_dependent_locality', 'dependent_locality', 'post_town', 'postcode',
+]
 
 TYPE_TO_INDEX_MAPPING = {
-    'propertyByPostcode': 'postcode',
+    'address_by_joined_fields': 'joined_fields',
+    'address_by_postcode': 'postcode',
 }
 
 
 def make_es_mappings(client):
     no_index_properties = {
         'uprn': {'type': 'string', 'index': 'no'},
-        'organisationName': {'type': 'string', 'index': 'no'},
-        'departmentName': {'type': 'string', 'index': 'no'},
-        'subBuildingName': {'type': 'string', 'index': 'no'},
-        'buildingName': {'type': 'string', 'index': 'no'},
-        'buildingNumber': {'type': 'string', 'index': 'no'},
-        'dependentThoroughfareName': {'type': 'string', 'index': 'no'},
-        'thoroughfareName': {'type': 'string', 'index': 'no'},
-        'doubleDependentLocality': {'type': 'string', 'index': 'no'},
-        'dependentLocality': {'type': 'string', 'index': 'no'},
-        'postTown': {'type': 'string', 'index': 'no'},
+        'organisation_name': {'type': 'string', 'index': 'no'},
+        'department_name': {'type': 'string', 'index': 'no'},
+        'sub_building_name': {'type': 'string', 'index': 'no'},
+        'building_name': {'type': 'string', 'index': 'no'},
+        'building_number': {'type': 'string', 'index': 'no'},
+        'dependent_thoroughfare_name': {'type': 'string', 'index': 'no'},
+        'thoroughfare_name': {'type': 'string', 'index': 'no'},
+        'double_dependent_locality': {'type': 'string', 'index': 'no'},
+        'dependent_locality': {'type': 'string', 'index': 'no'},
+        'post_town': {'type': 'string', 'index': 'no'},
         'postcode': {'type': 'string', 'index': 'no'},
-        'entryDatetime': {'type': 'date',
-                          'format': 'date_time_no_millis',
-                          'index': 'no'},
+        'x_coordinate': {'type': 'float', 'index': 'no'},
+        'y_coordinate': {'type': 'float', 'index': 'no'},
+        'joined_fields': {'type': 'string', 'index': 'no'},
+        'entry_datetime': {'type': 'date', 'format': 'date_time_no_millis', 'index': 'no'},
     }
 
     def make_es_mapping(doc_type, index_field):
-        mapping = {
-            doc_type: {'properties': no_index_properties}
-        }
-        mapping[doc_type]['properties'][index_field]['index'] = 'not_analyzed'
-        data = IndicesClient(client).put_mapping(index=INDEX_NAME,
-                                                 doc_type=doc_type,
-                                                 body=mapping)
+        mapping = {doc_type: {'properties': deepcopy(no_index_properties)}}  # uses a copy
+        # postcode searches are exact, anything else is not
+        mapping[doc_type]['properties'][index_field]['index'] = 'not_analyzed' if index_field == 'postcode' else 'analyzed'
+        return mapping
 
-    for doc_type, index_field in TYPE_TO_INDEX_MAPPING.items():
-        make_es_mapping(doc_type, index_field)
+    mapping_tuples = [(doc_type, make_es_mapping(doc_type, index_field)) for doc_type, index_field in TYPE_TO_INDEX_MAPPING.items()]
+
+    for doc_type, mapping in mapping_tuples:
+        IndicesClient(client).put_mapping(index=INDEX_NAME, doc_type=doc_type, body=mapping)
 
 
-def make_es_actions(dpa, position, entry_datetime):
+def make_es_actions(dpa, blpu, entry_datetime):
+    dpa_dict = vars(dpa)
+    joined_fields = ', '.join([dpa_dict[f] for f in ADDRESS_KEY_FIELDS if dpa_dict[f]])
     doc = {
         'uprn': dpa.uprn,
-        'organisationName': dpa.organisation_name,
-        'departmentName': dpa.department_name,
-        'subBuildingName': dpa.sub_building_name,
-        'buildingName': dpa.building_name,
-        'buildingNumber': dpa.building_number,
-        'dependentThoroughfareName': dpa.dependent_thoroughfare_name,
-        'thoroughfareName': dpa.thoroughfare_name,
-        'doubleDependentLocality': dpa.double_dependent_locality,
-        'dependentLocality': dpa.dependent_locality,
-        'postTown': dpa.post_town,
+        'organisation_name': dpa.organisation_name,
+        'department_name': dpa.department_name,
+        'sub_building_name': dpa.sub_building_name,
+        'building_name': dpa.building_name,
+        'building_number': dpa.building_number,
+        'dependent_thoroughfare_name': dpa.dependent_thoroughfare_name,
+        'thoroughfare_name': dpa.thoroughfare_name,
+        'double_dependent_locality': dpa.double_dependent_locality,
+        'dependent_locality': dpa.dependent_locality,
+        'post_town': dpa.post_town,
         'postcode': dpa.postcode,
-        'position': position,
-        'entryDatetime': entry_datetime,
+        'joined_fields': joined_fields,
+        'x_coordinate': float(blpu.x_coordinate),
+        'y_coordinate': float(blpu.y_coordinate),
+        'entry_datetime': entry_datetime,
     }
 
     def make_action(doc_type):
@@ -128,13 +135,11 @@ def get_action_dicts(filename):
 
         for _, group in groupby(data_reader, itemgetter(UPRN)):
             rows = list(group)
-            if (len(rows) == 1 and
-                    int(rows[0][RECORD_IDENTIFIER]) == HEADER_ID):
+            if len(rows) == 1 and int(rows[0][RECORD_IDENTIFIER]) == HEADER_ID:
                 header = Header(*rows[0])
                 # we use 'date_time_no_millis' format: yyyy-MM-dd’T'HH:mm:ssZZ
                 # we assume UTC (+00) as the spec doesn't specify a timezone
-                entry_datetime = '{}T{}+00'.format(header.entry_date,
-                                                   header.time_stamp)
+                entry_datetime = '{}T{}+00'.format(header.entry_date, header.time_stamp)
 
                 continue
 
@@ -155,11 +160,7 @@ def get_action_dicts(filename):
                 position = None
                 if len(blpu_list) == 1:
                     blpu = blpu_list[0]
-                    position = {
-                        'x': float(blpu.x_coordinate),
-                        'y': float(blpu.y_coordinate)
-                    }
-                action_dicts = make_es_actions(dpa, position, entry_datetime)
+                action_dicts = make_es_actions(dpa, blpu, entry_datetime)
 
                 # TODO: remove debug print statement
                 from pprint import pprint
@@ -172,8 +173,9 @@ def get_action_dicts(filename):
 def import_csv(filename, nodes):
     client = Elasticsearch(nodes)
     # create index if it doesn't exist
-    doc_type = list(TYPE_TO_INDEX_MAPPING.keys())[0]
-    client.index(index=INDEX_NAME, doc_type=doc_type, body={})
+    if INDEX_NAME not in client.indices.status()['indices']:
+        doc_type = list(TYPE_TO_INDEX_MAPPING.keys())[0]
+        client.index(index=INDEX_NAME, doc_type=doc_type, body={})
     make_es_mappings(client)
     action_dicts = get_action_dicts(filename)
     bulk(client, action_dicts)

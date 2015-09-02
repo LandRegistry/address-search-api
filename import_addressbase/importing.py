@@ -33,15 +33,15 @@ DELETE = 'D'
 ADDRESS_KEY_FIELDS = [
     'organisation_name', 'sub_building_name', 'building_name', 'building_number', 'dependent_thoroughfare_name',
     'thoroughfare_name', 'double_dependent_locality', 'dependent_locality', 'post_town', 'postcode',
-]
+]  # type: List[str]
 
 TYPE_TO_INDEX_MAPPING = {
     'address_by_joined_fields': 'joined_fields',
     'address_by_postcode': 'postcode',
-}
+}  # type: Dict[str, str]
 
 
-def make_es_mappings(client):
+def make_es_mappings(client) -> None:
     no_index_properties = {
         'uprn': {'type': 'string', 'index': 'no'},
         'organisation_name': {'type': 'string', 'index': 'no'},
@@ -59,10 +59,10 @@ def make_es_mappings(client):
         'y_coordinate': {'type': 'float', 'index': 'no'},
         'joined_fields': {'type': 'string', 'index': 'no'},
         'entry_datetime': {'type': 'date', 'format': 'date_time_no_millis', 'index': 'no'},
-    }
+    }  # type: Dict[str, Dict[str, str]]
 
-    def make_es_mapping(doc_type, index_field):
-        mapping = {doc_type: {'properties': deepcopy(no_index_properties)}}  # uses a copy
+    def make_es_mapping(doc_type: str, index_field: str) -> Dict[str, Dict[str, Dict[str, Dict[str, str]]]]:
+        mapping = {doc_type: {'properties': deepcopy(no_index_properties)}}  # type: Dict[str, Dict[str, Dict[str, Dict[str, str]]]]
         # postcode searches are exact, anything else is not
         mapping[doc_type]['properties'][index_field]['index'] = 'not_analyzed' if index_field == 'postcode' else 'analyzed'
         return mapping
@@ -73,7 +73,7 @@ def make_es_mappings(client):
         IndicesClient(client).put_mapping(index=INDEX_NAME, doc_type=doc_type, body=mapping)
 
 
-def make_es_actions(dpa, blpu, entry_datetime):
+def make_es_actions(dpa: DPA, blpu: BLPU, entry_datetime: str) -> List[Dict[str, Union[str, Dict[str, Union[str, float]]]]]:
     dpa_dict = vars(dpa)
     joined_fields = ', '.join([dpa_dict[f] for f in ADDRESS_KEY_FIELDS if dpa_dict[f]])
     doc = {
@@ -93,45 +93,28 @@ def make_es_actions(dpa, blpu, entry_datetime):
         'x_coordinate': float(blpu.x_coordinate),
         'y_coordinate': float(blpu.y_coordinate),
         'entry_datetime': entry_datetime,
-    }
+    }  # type: Dict[str, Union[str, float]]
 
-    def make_action(doc_type):
-        if dpa.change_type == INSERT:
-            action_dict = {
-                '_index': INDEX_NAME,
-                '_type': doc_type,
-                '_id': dpa.uprn,
-                '_source': doc,
-            }
-        elif dpa.change_type == UPDATE:
-            action_dict = {
-                '_op_type': 'update',
-                '_index': INDEX_NAME,
-                '_type': doc_type,
-                '_id': dpa.uprn,
-                'doc': doc,
-            }
-        elif dpa.change_type == DELETE:
-            action_dict = {
-                '_op_type': 'delete',
-                '_index': INDEX_NAME,
-                '_type': doc_type,
-                '_id': dpa.uprn,
-            }
-        return action_dict
+    def make_action(doc_type: str) -> Dict[str, Union[str, Dict[str, Union[str, float]]]]:
+        action_dict_cases = {
+            INSERT: {'_op_type': 'index', '_index': INDEX_NAME, '_type': doc_type, '_id': dpa.uprn, '_source': doc},
+            UPDATE: {'_op_type': 'update', '_index': INDEX_NAME, '_type': doc_type, '_id': dpa.uprn, 'doc': doc},
+            DELETE: {'_op_type': 'delete', '_index': INDEX_NAME, '_type': doc_type, '_id': dpa.uprn},
+        }  # type: Dict[str, Dict[str, Union[str, Dict[str, Union[str, float]]]]]
+        return action_dict_cases[dpa.change_type]
 
     actions = [make_action(doctype) for doctype in TYPE_TO_INDEX_MAPPING.keys()]
     return actions
 
 
-def get_action_dicts(filename):
+def get_action_dicts(filename: str) -> Iterator[Dict[str, Union[str, Dict[str, Union[str, float]]]]]:
     """A generator which yields elasticsearch action dicts for groups of records
     with one DPA and zero or one BPLU
     """
     with open(filename, 'r') as csv_file:
         data_reader = csv.reader(csv_file)
 
-        entry_datetime = None
+        entry_datetime = None  # type: str
 
         for _, group in groupby(data_reader, itemgetter(UPRN)):
             rows = list(group)
@@ -143,8 +126,8 @@ def get_action_dicts(filename):
 
                 continue
 
-            blpu_list = []
-            dpa_list = []
+            blpu_list = []  # type: List[BLPU]
+            dpa_list = []   # type: List[DPA]
             # create namedtuples from each line
             for row in rows:
                 rec_type = int(row[RECORD_IDENTIFIER])
@@ -157,7 +140,6 @@ def get_action_dicts(filename):
             # we must have one DPA and zero or one BPLU
             if len(dpa_list) == 1 and len(blpu_list) in [0, 1]:
                 dpa = dpa_list[0]
-                position = None
                 if len(blpu_list) == 1:
                     blpu = blpu_list[0]
                 action_dicts = make_es_actions(dpa, blpu, entry_datetime)
@@ -170,7 +152,7 @@ def get_action_dicts(filename):
                     yield action_dict
 
 
-def import_csv(filename, nodes):
+def import_csv(filename: str, nodes: List[str]) -> None:
     client = Elasticsearch(nodes)
     # create index if it doesn't exist
     if INDEX_NAME not in client.indices.status()['indices']:

@@ -16,6 +16,7 @@ def test_correct_action_for_insert():
 
     expected_actions = [
         {
+            '_op_type': 'index',
             '_index': 'landregistry',
             '_type': 'address_by_joined_fields',
             '_id': 'uprn',
@@ -39,6 +40,7 @@ def test_correct_action_for_insert():
             },
         },
         {
+            '_op_type': 'index',
             '_index': 'landregistry',
             '_type': 'address_by_postcode',
             '_id': 'uprn',

@@ -3,11 +3,12 @@ import json
 import logging
 import logging.config  # type: ignore
 import math
+from typing import Any, Dict, List, Union
 
 from service import app, es_access
 
-MAX_NUMBER_SEARCH_RESULTS = app.config['MAX_NUMBER_SEARCH_RESULTS']
-SEARCH_RESULTS_PER_PAGE = app.config['SEARCH_RESULTS_PER_PAGE']
+MAX_NUMBER_SEARCH_RESULTS = int(app.config['MAX_NUMBER_SEARCH_RESULTS'])
+SEARCH_RESULTS_PER_PAGE = int(app.config['SEARCH_RESULTS_PER_PAGE'])
 
 INTERNAL_SERVER_ERROR_RESPONSE_BODY = json.dumps({'error': 'Internal server error'})
 JSON_CONTENT_TYPE = 'application/json'
@@ -17,7 +18,7 @@ ADDRESS_NOT_FOUND_RESPONSE = Response(json.dumps({'error': 'Address not found'})
 
 
 @app.errorhandler(Exception)
-def handle_server_error(error):
+def handle_server_error(error: BaseException):
     LOGGER.error('An error occurred when processing a request', exc_info=error)
     return Response(INTERNAL_SERVER_ERROR_RESPONSE_BODY, status=500, mimetype=JSON_CONTENT_TYPE)
 
@@ -37,7 +38,7 @@ def healthcheck():
     return Response(json.dumps(response_body), status=http_status, mimetype=JSON_CONTENT_TYPE)
 
 
-def paginated_address_records(address_records, page_number):
+def paginated_address_records(address_records, page_number: int) -> Dict[str, Union[List[Dict[str, Any]], int]]:
     if address_records:
         address_dicts = [hit['_source'] for hit in address_records.hits]
         nof_results = min(address_records.total, MAX_NUMBER_SEARCH_RESULTS)
@@ -49,7 +50,7 @@ def paginated_address_records(address_records, page_number):
 
 
 @app.route('/search', methods=['GET'])
-def get_search_results():
+def get_search_results() -> str:
     phrase = request.args.get('phrase')
     postcode = request.args.get('postcode')
     page_number = int(request.args.get('page_number', 0))
@@ -63,7 +64,7 @@ def get_search_results():
     return jsonify({'data': result})
 
 
-def _check_elasticsearch_connection():
+def _check_elasticsearch_connection() -> List[str]:
     """Checks elasticsearch connection and returns a list of errors"""
     try:
         status = es_access.get_info()['status']

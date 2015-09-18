@@ -26,7 +26,7 @@ To import data, run the following from a shell:
 
 During development it's occasionally useful to delete the elasticsearch index. To do so, use this command:
 
-curl -XDELETE $ELASTIC_SEARCH_ENDPOINT/landregistry
+curl -XDELETE $ELASTIC_SEARCH_ENDPOINT/address-search-api-index
 
 ## Run the server
 

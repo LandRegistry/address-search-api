@@ -12,7 +12,7 @@ from typing import Dict, Iterator, List, Union
 from record_types import Header, BLPU, DPA
 
 
-INDEX_NAME = 'landregistry'
+INDEX_NAME = 'address-search-api-index'
 
 HEADER_ID = 10  # Header record                (contains entry date)
 BLPU_ID = 21    # Basic Land and Property Unit (contains coordinates)

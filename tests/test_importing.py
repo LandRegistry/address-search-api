@@ -17,7 +17,7 @@ def test_correct_action_for_insert():
     expected_actions = [
         {
             '_op_type': 'index',
-            '_index': 'landregistry',
+            '_index': 'address-search-api-index',
             '_type': 'address_by_joined_fields',
             '_id': 'uprn',
             '_source': {
@@ -41,7 +41,7 @@ def test_correct_action_for_insert():
         },
         {
             '_op_type': 'index',
-            '_index': 'landregistry',
+            '_index': 'address-search-api-index',
             '_type': 'address_by_postcode',
             '_id': 'uprn',
             '_source': {
@@ -79,7 +79,7 @@ def test_correct_action_for_update():
     expected_actions = [
         {
             '_op_type': 'update',
-            '_index': 'landregistry',
+            '_index': 'address-search-api-index',
             '_type': 'address_by_joined_fields',
             '_id': 'uprn',
             'doc': {
@@ -103,7 +103,7 @@ def test_correct_action_for_update():
         },
         {
             '_op_type': 'update',
-            '_index': 'landregistry',
+            '_index': 'address-search-api-index',
             '_type': 'address_by_postcode',
             '_id': 'uprn',
             'doc': {
@@ -141,13 +141,13 @@ def test_correct_action_for_delete():
     expected_actions = [
         {
             '_op_type': 'delete',
-            '_index': 'landregistry',
+            '_index': 'address-search-api-index',
             '_type': 'address_by_joined_fields',
             '_id': 'uprn',
         },
         {
             '_op_type': 'delete',
-            '_index': 'landregistry',
+            '_index': 'address-search-api-index',
             '_type': 'address_by_postcode',
             '_id': 'uprn',
         },
@@ -185,7 +185,7 @@ def test_mappings_made_correctly():
                 }
             }
         }
-        mock_put_mapping.assert_any_call(index='landregistry', body=expected_body, doc_type='address_by_postcode')
+        mock_put_mapping.assert_any_call(index='address-search-api-index', body=expected_body, doc_type='address_by_postcode')
 
         expected_body2 = {
             'address_by_joined_fields': {
@@ -209,4 +209,4 @@ def test_mappings_made_correctly():
                 }
             },
         }
-        mock_put_mapping.assert_any_call(index='landregistry', body=expected_body2, doc_type='address_by_joined_fields')
+        mock_put_mapping.assert_any_call(index='address-search-api-index', body=expected_body2, doc_type='address_by_joined_fields')

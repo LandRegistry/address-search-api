@@ -44,7 +44,7 @@ def get_addresses_for_phrase(phrase: str, page_number: int, page_size: int):
 
 def create_search(doc_type: str):
     client = Elasticsearch([ELASTICSEARCH_ENDPOINT])
-    search = Search(using=client, index='landregistry', doc_type=doc_type)
+    search = Search(using=client, index='address-search-api-index', doc_type=doc_type)
     search = search[0:MAX_NUMBER_SEARCH_RESULTS]
     return search
 

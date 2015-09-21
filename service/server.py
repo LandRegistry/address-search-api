@@ -60,6 +60,8 @@ def get_search_results() -> str:
         address_records = es_access.get_addresses_for_phrase(phrase, page_number, page_size)
     elif postcode:
         address_records = es_access.get_addresses_for_postcode(postcode, page_number, page_size)
+    else:
+        return jsonify({'errors': 'No parameters provided for searching'})
     result = paginated_address_records(address_records, page_number, page_size)
     return jsonify({'data': result})
 

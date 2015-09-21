@@ -14,4 +14,4 @@ def handle_shutdown(*args, **kwargs):
 
 
 LOGGER.info('Starting the server')
-app.run(host='0.0.0.0', port=int(os.environ.get('PORT') or '5000'))
+app.run(host='0.0.0.0', port=int(app.config.get('PORT') or '8002'))

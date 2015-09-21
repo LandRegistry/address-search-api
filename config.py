@@ -9,6 +9,7 @@ CONFIG_DICT = {
     'ELASTIC_SEARCH_ENDPOINT': os.environ['ELASTIC_SEARCH_ENDPOINT'],
     'MAX_NUMBER_SEARCH_RESULTS': int(os.environ['MAX_NUMBER_SEARCH_RESULTS']),
     'SEARCH_RESULTS_PER_PAGE': int(os.environ['SEARCH_RESULTS_PER_PAGE']),
+    'PORT': int(os.environ['PORT']),
 }  # type: Dict[str, Union[bool, str, int]]
 
 settings = os.environ.get('SETTINGS')

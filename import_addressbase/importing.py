@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from betterprint import pprint
 from copy import deepcopy
 import csv
 from elasticsearch import Elasticsearch         # type: ignore
@@ -144,8 +145,6 @@ def get_action_dicts(filename: str) -> Iterator[Dict[str, Union[str, Dict[str, U
                     blpu = blpu_list[0]
                 action_dicts = make_es_actions(dpa, blpu, entry_datetime)
 
-                # TODO: remove debug print statement
-                from pprint import pprint
                 pprint(action_dicts, width=1)
 
                 for action_dict in action_dicts:

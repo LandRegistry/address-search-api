@@ -6,6 +6,9 @@ from service import es_access
 
 FakeElasticsearchHits = namedtuple('address_records', ['hits', 'total'])
 
+PAGE_NUMBER = 0
+PAGE_SIZE = 20
+
 EXPECTED_RESPONSE = {
     'data': {
         'addresses': [
@@ -52,8 +55,11 @@ EXPECTED_RESPONSE = {
     }
 }
 
+EXPECTED_ERROR_RESPONSE = {
+    'errors': 'No parameters provided for searching'
+}
 
-def _get_es_postcode_results(*house_numbers, total=None):
+def _get_esearch_results(*house_numbers, total=None):
     total = len(house_numbers) if total is None else total
     return FakeElasticsearchHits([_get_es_postcode_result(num) for num in house_numbers], total)
 
@@ -81,14 +87,31 @@ def _get_es_postcode_result(house_number):
     }
 
 
-@mock.patch.object(es_access, 'get_addresses_for_postcode', return_value=_get_es_postcode_results(1, 2))
+@mock.patch.object(es_access, 'get_addresses_for_postcode', return_value=_get_esearch_results(1, 2))
 def test_search_results_using_postcode(mock_es_access):
     postcode = 'EX4 4QU'
-    page_number = 0
-    page_size = 20
     response = app.test_client().get('/search?postcode=EX4 4QU')
 
-    mock_es_access.assert_called_once_with(postcode, page_number, page_size)
+    mock_es_access.assert_called_once_with(postcode, PAGE_NUMBER, PAGE_SIZE)
 
     json_body = json.loads(response.data.decode())
     assert json_body == EXPECTED_RESPONSE
+
+@mock.patch.object(es_access, 'get_addresses_for_phrase', return_value=_get_esearch_results(1, 2))
+def test_search_results_using_phrase(mock_es_access):
+
+    response = app.test_client().get('/search?phrase=someaddress')
+
+    mock_es_access.assert_called_once_with('someaddress', PAGE_NUMBER, PAGE_SIZE)
+
+    json_body = json.loads(response.data.decode())
+    assert json_body == EXPECTED_RESPONSE
+
+@mock.patch.object(es_access, 'get_addresses_for_phrase', return_value=_get_esearch_results(1))
+def test_search_results_with_no_parameters(mock_es_access):
+    response = app.test_client().get('/search')
+
+    assert mock_es_access.mock_calls == []
+
+    json_body = json.loads(response.data.decode())
+    assert json_body == EXPECTED_ERROR_RESPONSE

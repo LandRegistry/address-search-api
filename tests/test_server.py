@@ -59,6 +59,7 @@ EXPECTED_ERROR_RESPONSE = {
     'errors': 'No parameters provided for searching'
 }
 
+
 def _get_esearch_results(*house_numbers, total=None):
     total = len(house_numbers) if total is None else total
     return FakeElasticsearchHits([_get_es_postcode_result(num) for num in house_numbers], total)
@@ -97,6 +98,7 @@ def test_search_results_using_postcode(mock_es_access):
     json_body = json.loads(response.data.decode())
     assert json_body == EXPECTED_RESPONSE
 
+
 @mock.patch.object(es_access, 'get_addresses_for_phrase', return_value=_get_esearch_results(1, 2))
 def test_search_results_using_phrase(mock_es_access):
 
@@ -106,6 +108,7 @@ def test_search_results_using_phrase(mock_es_access):
 
     json_body = json.loads(response.data.decode())
     assert json_body == EXPECTED_RESPONSE
+
 
 @mock.patch.object(es_access, 'get_addresses_for_phrase', return_value=_get_esearch_results(1))
 def test_search_results_with_no_parameters(mock_es_access):

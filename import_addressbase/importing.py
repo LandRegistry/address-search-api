@@ -32,7 +32,7 @@ UPDATE = 'U'
 DELETE = 'D'
 
 ADDRESS_KEY_FIELDS = [
-    'organisation_name', 'sub_building_name', 'building_name', 'building_number', 'dependent_thoroughfare_name',
+    'sub_building_name', 'building_name', 'building_number', 'dependent_thoroughfare_name',
     'thoroughfare_name', 'double_dependent_locality', 'dependent_locality', 'post_town', 'postcode',
 ]  # type: List[str]
 
@@ -47,11 +47,11 @@ def make_es_mappings(client) -> None:
         'uprn': {'type': 'string', 'index': 'no'},
         'organisation_name': {'type': 'string', 'index': 'no'},
         'department_name': {'type': 'string', 'index': 'no'},
-        'sub_building_name': {'type': 'string', 'index': 'no'},
-        'building_name': {'type': 'string', 'index': 'no'},
-        'building_number': {'type': 'string', 'index': 'no'},
+        'sub_building_name': {'type': 'string', 'index': 'not_analyzed'},
+        'building_name': {'type': 'string', 'index': 'not_analyzed'},
+        'building_number': {'type': 'integer', 'index': 'not_analyzed'},
         'dependent_thoroughfare_name': {'type': 'string', 'index': 'no'},
-        'thoroughfare_name': {'type': 'string', 'index': 'no'},
+        'thoroughfare_name': {'type': 'string', 'index': 'not_analyzed'},
         'double_dependent_locality': {'type': 'string', 'index': 'no'},
         'dependent_locality': {'type': 'string', 'index': 'no'},
         'post_town': {'type': 'string', 'index': 'no'},
@@ -69,7 +69,6 @@ def make_es_mappings(client) -> None:
         return mapping
 
     mapping_tuples = [(doc_type, make_es_mapping(doc_type, index_field)) for doc_type, index_field in TYPE_TO_INDEX_MAPPING.items()]
-
     for doc_type, mapping in mapping_tuples:
         IndicesClient(client).put_mapping(index=INDEX_NAME, doc_type=doc_type, body=mapping)
 

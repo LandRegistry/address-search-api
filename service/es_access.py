@@ -18,12 +18,12 @@ def _get_start_and_end_indexes(page_number: int, page_size: int) -> Tuple[int, i
 # TODO: write integration tests for this module
 def get_addresses_for_postcode(postcode: str, page_number: int, page_size: int):
     search = create_search('address_by_postcode')
-    query = search.query('term', postcode=postcode.upper()).sort(
-        {'sub_building_name': {'missing': '_last'}},
-        {'building_name': {'missing': '_last'}},
-        {'building_number': {'missing': '_last'}},
-        {'dependent_thoroughfare_name': {'missing': '_last'}},
+    query = search.query("term", postcode=postcode.upper()).sort(
         {'thoroughfare_name': {'missing': '_last'}},
+        {'dependent_thoroughfare_name': {'missing': '_last'}},
+        {'building_number': {'missing': '_last', 'order': 'asc'}},
+        {'building_name': {'missing': '_last'}},
+        {'sub_building_name': {'missing': '_last'}},
     )
     start_index, end_index = _get_start_and_end_indexes(page_number, page_size)
     return query[start_index:end_index].execute().hits

@@ -19,8 +19,9 @@ To import data, run the following from a shell:
 ```
     workon address-search-api
     source environment.sh
-    python import.py /path/to/addressbase_file.csv
+    python import.py /path/to/addressbase_file.csv   
 ```
+- purely for local testing you can use sx9090tail.csv
 
 ## Deleting the index
 

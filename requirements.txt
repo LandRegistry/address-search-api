@@ -1,2 +1,5 @@
-elasticsearch==1.4.0
-urllib3==1.10.1
+betterprint==0.2
+elasticsearch==1.6.0
+elasticsearch-dsl==0.0.4
+Flask==0.10.1
+mypy-lang==0.2.0

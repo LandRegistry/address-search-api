@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-from betterprint import pprint
-from copy import deepcopy
-import csv
+from betterprint import pprint                  # type: ignore
+from copy import deepcopy                       # type: ignore
+import csv                                      # type: ignore
 from elasticsearch import Elasticsearch         # type: ignore
 from elasticsearch.client import IndicesClient  # type: ignore
 from elasticsearch.helpers import bulk          # type: ignore
@@ -107,18 +107,14 @@ def make_es_actions(dpa: DPA, blpu: BLPU, entry_datetime: str) -> List[Dict[str,
     return actions
 
 
-def csv_itemgetter(index, delimiter=','):
-    composite = lambda row: row.split(delimiter)[index]
-    return composite
-
-
 def get_action_dicts(csv_file) -> Iterator[Dict[str, Union[str, Dict[str, Union[str, float]]]]]:
     """A generator which yields elasticsearch action dicts for groups of records
     with one DPA and zero or one BPLU
     """
+    data_reader = csv.reader(csv_file)
     entry_datetime = None  # type: str
 
-    for _, group in groupby(csv_file, csv_itemgetter(UPRN)):
+    for _, group in groupby(data_reader, itemgetter(UPRN)):
         rows = list(group)
         if len(rows) == 1 and int(rows[0][RECORD_IDENTIFIER]) == HEADER_ID:
             header = Header(*rows[0])

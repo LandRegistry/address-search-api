@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-from betterprint import pprint
-from copy import deepcopy
-import csv
+from betterprint import pprint                  # type: ignore
+from copy import deepcopy                       # type: ignore
+import csv                                      # type: ignore
 from elasticsearch import Elasticsearch         # type: ignore
 from elasticsearch.client import IndicesClient  # type: ignore
 from elasticsearch.helpers import bulk          # type: ignore
@@ -107,55 +107,53 @@ def make_es_actions(dpa: DPA, blpu: BLPU, entry_datetime: str) -> List[Dict[str,
     return actions
 
 
-def get_action_dicts(filename: str) -> Iterator[Dict[str, Union[str, Dict[str, Union[str, float]]]]]:
+def get_action_dicts(csv_file) -> Iterator[Dict[str, Union[str, Dict[str, Union[str, float]]]]]:
     """A generator which yields elasticsearch action dicts for groups of records
     with one DPA and zero or one BPLU
     """
-    with open(filename, 'r') as csv_file:
-        data_reader = csv.reader(csv_file)
+    data_reader = csv.reader(csv_file)
+    entry_datetime = None  # type: str
 
-        entry_datetime = None  # type: str
+    for _, group in groupby(data_reader, itemgetter(UPRN)):
+        rows = list(group)
+        if len(rows) == 1 and int(rows[0][RECORD_IDENTIFIER]) == HEADER_ID:
+            header = Header(*rows[0])
+            # we use 'date_time_no_millis' format: yyyy-MM-dd’T'HH:mm:ssZZ
+            # we assume UTC (+00) as the spec doesn't specify a timezone
+            entry_datetime = '{}T{}+00'.format(header.entry_date, header.time_stamp)
 
-        for _, group in groupby(data_reader, itemgetter(UPRN)):
-            rows = list(group)
-            if len(rows) == 1 and int(rows[0][RECORD_IDENTIFIER]) == HEADER_ID:
-                header = Header(*rows[0])
-                # we use 'date_time_no_millis' format: yyyy-MM-dd’T'HH:mm:ssZZ
-                # we assume UTC (+00) as the spec doesn't specify a timezone
-                entry_datetime = '{}T{}+00'.format(header.entry_date, header.time_stamp)
+            continue
 
-                continue
+        blpu_list = []  # type: List[BLPU]
+        dpa_list = []   # type: List[DPA]
+        # create namedtuples from each line
+        for row in rows:
+            rec_type = int(row[RECORD_IDENTIFIER])
+            # create a record using the values in the row
+            if rec_type == BLPU_ID:
+                blpu_list += [BLPU(*row)]
+            elif rec_type == DPA_ID:
+                dpa_list += [DPA(*row)]
 
-            blpu_list = []  # type: List[BLPU]
-            dpa_list = []   # type: List[DPA]
-            # create namedtuples from each line
-            for row in rows:
-                rec_type = int(row[RECORD_IDENTIFIER])
-                # create a record using the values in the row
-                if rec_type == BLPU_ID:
-                    blpu_list += [BLPU(*row)]
-                elif rec_type == DPA_ID:
-                    dpa_list += [DPA(*row)]
+        # we must have one DPA and zero or one BPLU
+        if len(dpa_list) == 1 and len(blpu_list) in [0, 1]:
+            dpa = dpa_list[0]
+            if len(blpu_list) == 1:
+                blpu = blpu_list[0]
+            action_dicts = make_es_actions(dpa, blpu, entry_datetime)
 
-            # we must have one DPA and zero or one BPLU
-            if len(dpa_list) == 1 and len(blpu_list) in [0, 1]:
-                dpa = dpa_list[0]
-                if len(blpu_list) == 1:
-                    blpu = blpu_list[0]
-                action_dicts = make_es_actions(dpa, blpu, entry_datetime)
+            pprint(action_dicts, width=1)
 
-                pprint(action_dicts, width=1)
-
-                for action_dict in action_dicts:
-                    yield action_dict
+            for action_dict in action_dicts:
+                yield action_dict
 
 
-def import_csv(filename: str, nodes: List[str]) -> None:
+def import_csv(csv_file: str, nodes: List[str]) -> None:
     client = Elasticsearch(nodes)
     # create index if it doesn't exist
     if INDEX_NAME not in client.indices.status()['indices']:
         doc_type = list(TYPE_TO_INDEX_MAPPING.keys())[0]
         client.index(index=INDEX_NAME, doc_type=doc_type, body={})
     make_es_mappings(client)
-    action_dicts = get_action_dicts(filename)
+    action_dicts = get_action_dicts(csv_file)
     bulk(client, action_dicts)

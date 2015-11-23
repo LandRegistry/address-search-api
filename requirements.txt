@@ -2,4 +2,6 @@ betterprint==0.2
 elasticsearch==1.6.0
 elasticsearch-dsl==0.0.4
 Flask==0.10.1
+Werkzeug==0.9.6
 mypy-lang==0.2.0
+zipfile2==0.0.11

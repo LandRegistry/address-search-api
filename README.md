@@ -19,9 +19,18 @@ To import data, run the following from a shell:
 ```
     workon address-search-api
     source environment.sh
-    python import.py /path/to/addressbase_file.csv   
+    python3 import.py /path/to/top_level_directory  
 ```
-- purely for local testing you can use sx9090tail.csv
+
+The data needs to be in a folder inside another folder (see Example AddressBase directory)
+
+This is to emulate the FTP server structure where we receive the data from Ordnance Survey
+
+Purely for local testing you can use :
+
+```
+    python3 import.py 'Example AddressBase directory'
+```
 
 ## Deleting the index
 

@@ -7,11 +7,14 @@ from elasticsearch import Elasticsearch         # type: ignore
 from elasticsearch.client import IndicesClient  # type: ignore
 from elasticsearch.helpers import bulk          # type: ignore
 from itertools import groupby
+import logging
+import logging.config  # type: ignore
 from operator import itemgetter  # type: ignore
 from typing import Dict, Iterator, List, Union
 
 from record_types import Header, BLPU, DPA
 
+LOGGER = logging.getLogger(__name__)
 
 INDEX_NAME = 'address-search-api-index'
 
@@ -76,6 +79,11 @@ def make_es_mappings(client) -> None:
 def make_es_actions(dpa: DPA, blpu: BLPU, entry_datetime: str) -> List[Dict[str, Union[str, Dict[str, Union[str, float]]]]]:
     dpa_dict = vars(dpa)
     joined_fields = ', '.join([dpa_dict[f] for f in ADDRESS_KEY_FIELDS if dpa_dict[f]])
+    x_coord = 0.0
+    y_coord = 0.0
+    if blpu:
+        x_coord = float(blpu.x_coordinate)
+        y_coord = float(blpu.y_coordinate)
     doc = {
         'uprn': dpa.uprn,
         'organisation_name': dpa.organisation_name,
@@ -90,8 +98,8 @@ def make_es_actions(dpa: DPA, blpu: BLPU, entry_datetime: str) -> List[Dict[str,
         'post_town': dpa.post_town,
         'postcode': dpa.postcode,
         'joined_fields': joined_fields,
-        'x_coordinate': float(blpu.x_coordinate),
-        'y_coordinate': float(blpu.y_coordinate),
+        'x_coordinate': x_coord,
+        'y_coordinate': y_coord,
         'entry_datetime': entry_datetime,
     }  # type: Dict[str, Union[str, float]]
 
@@ -138,6 +146,7 @@ def get_action_dicts(csv_file) -> Iterator[Dict[str, Union[str, Dict[str, Union[
         # we must have one DPA and zero or one BPLU
         if len(dpa_list) == 1 and len(blpu_list) in [0, 1]:
             dpa = dpa_list[0]
+            blpu = []
             if len(blpu_list) == 1:
                 blpu = blpu_list[0]
             action_dicts = make_es_actions(dpa, blpu, entry_datetime)
@@ -154,6 +163,9 @@ def import_csv(csv_file: str, nodes: List[str]) -> None:
     if INDEX_NAME not in client.indices.status()['indices']:
         doc_type = list(TYPE_TO_INDEX_MAPPING.keys())[0]
         client.index(index=INDEX_NAME, doc_type=doc_type, body={})
-    make_es_mappings(client)
-    action_dicts = get_action_dicts(csv_file)
-    bulk(client, action_dicts)
+    try:
+        make_es_mappings(client)
+        action_dicts = get_action_dicts(csv_file)
+        bulk(client, action_dicts)
+    except Exception as e:
+        LOGGER.error('An error occurred when processing a bulk update', exc_info=e)

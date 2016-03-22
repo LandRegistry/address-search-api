@@ -3,7 +3,7 @@
   "disable_existing_loggers": false,
   "formatters": {
     "default": {
-      "format": "%(asctime)s level=[%(levelname)s] logger=[%(name)s] thread=[%(threadName)s] message=[%(message)s] exception=[%(exc_info)s]"
+      "format": "%(asctime)s level=[%(levelname)s] logger=[%(name)s] module=[%(module)s] lineno=[%(lineno)s] message=[%(message)s] exception=[%(exc_info)s]"
     }
   },
   "handlers": {
